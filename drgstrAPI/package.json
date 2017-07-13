@@ -1,0 +1,19 @@
+{
+  "name": "restful-api-demo",
+  "version": "0.0.1",
+  "description": "RESTful API using Node JS, Express JS, and MS SQL Server",
+  "main": "server.js",
+  "dependencies": {
+    "async": "^2.5.0",
+    "body-parser": "^1.15.2",
+    "express": "^4.14.0",
+    "mssql": "^ 3.3.0"
+  },
+  "scripts": {
+    "start dev": "NODE_ENV='development' node server.js"
+  },
+  "author": {
+    "name": "Vlad povalii",
+    "email": "vladpovalii@gmail.com"
+  }
+}
