@@ -2,6 +2,7 @@ var express = require('express');
 var router = express.Router();
 
 var db = require('../queries');
+var db_yeepua = require('../queries_yeepua');
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
@@ -21,10 +22,13 @@ router.get('/api/rpt_invStock/:id', db.getInvBySupID);
 router.get('/api/datacollector', db.getItems);
 router.get('/api/datacollector/:id', db.getItemByBarcode);
 router.put('/api/datacollector/:id', db.updateItemQty);
+
 //yeepua
-router.get('/api/yeepua', db.getBuyItems);
-router.get('/api/yeepua/:id/barcode', db.getBuyItemByBarcode);
-router.post('/api/yeepua', db.insertBuyItems);
+router.get('/api/yeepua', db_yeepua.getBuyItems);
+router.get('/api/yeepua/:id/barcode', db_yeepua.getBuyItemByBarcode);
+router.post('/api/yeepua', db_yeepua.insertBuyItemsTrans);
+//userlogin
+router.post('/api/login', db_yeepua.getUser);
 
 
 module.exports = router;
