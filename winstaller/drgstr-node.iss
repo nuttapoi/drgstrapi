@@ -4,7 +4,7 @@
 #define MyAppName "drgstrAPI"
 #define MyAppShortName "drgstrAPI"
 #define MyAppLCShortName "drgstrAPI"
-#define MyAppVersion "1.0"
+#define MyAppVersion "3.0"
 #define MyAppPublisher "drugstoresoft"
 #define MyAppURL "http://drugstoresoft.com/"
 #define MyAppExeName "winstart-browser.bat"
@@ -14,8 +14,11 @@
 #define NSSM "nssm.exe"
 #define NSSM32 "nssm-x86.exe"
 #define NSSM64 "nssm.exe"
-#define NODE32 "node-v6.10.2-x86.msi"
-#define NODE64 "node-v6.11.0-x64.msi"
+;#define NODE32 "node-v6.10.2-x86.msi"
+;#define NODE64 "node-v6.11.0-x64.msi"
+;#define NODE "node-v6.10.2-x86.msi"
+#define NODE32 "node-v12.3.1-x86.msi"
+#define NODE64 "node-v12.3.1-x64.msi"
 #define NODE "node-v6.10.2-x86.msi"
 #define USERPROFILE "C:\Users\nuttapoi"
 
@@ -41,7 +44,7 @@ DisableProgramGroupPage=yes
 ;InfoAfterFile={#USERPROFILE}\Downloads\after.txt
 OutputDir={#USERPROFILE}\Desktop
 OutputBaseFilename={#MyAppShortName}Installer
-SetupIconFile=d:\mean\drgstr-crud\winstaller\{#MyAppIcon}
+SetupIconFile=d:\mean\drgstr-crud-v3\winstaller\{#MyAppIcon}
 Compression=lzma
 SolidCompression=yes
 
@@ -51,14 +54,14 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 
 
 [Files]
-Source: "d:\mean\drgstr-crud\winstaller\winstart-server.bat"; DestDir: "{app}"; Flags: ignoreversion
-Source: "d:\mean\drgstr-crud\winstaller\winstart-browser.bat"; DestDir: "{app}"; Flags: ignoreversion
-Source: "d:\mean\drgstr-crud\winstaller\msie-app.hta"; DestDir: "{app}"; Flags: ignoreversion
-Source: "d:\mean\drgstr-crud\winstaller\msie-app-secure.hta"; DestDir: "{app}"; Flags: ignoreversion
-Source: "d:\Download\mean\{#NODE32}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "d:\mean\drgstr-crud\winstaller\{#NSSM32}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "d:\mean\drgstr-crud\winstaller\{#MyAppIcon}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "d:\mean\drgstr-crud\{#MyAppShortName}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "d:\mean\drgstr-crud-v3\winstaller\winstart-server.bat"; DestDir: "{app}"; Flags: ignoreversion
+Source: "d:\mean\drgstr-crud-v3\winstaller\winstart-browser.bat"; DestDir: "{app}"; Flags: ignoreversion
+Source: "d:\mean\drgstr-crud-v3\winstaller\msie-app.hta"; DestDir: "{app}"; Flags: ignoreversion
+Source: "d:\mean\drgstr-crud-v3\winstaller\msie-app-secure.hta"; DestDir: "{app}"; Flags: ignoreversion
+Source: "d:\mean\{#NODE32}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "d:\mean\drgstr-crud-v3\winstaller\{#NSSM32}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "d:\mean\drgstr-crud-v3\winstaller\{#MyAppIcon}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "d:\mean\drgstr-crud-v3\{#MyAppShortName}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 

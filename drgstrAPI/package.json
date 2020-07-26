@@ -1,19 +1,26 @@
 {
-  "name": "restful-api-demo",
+  "name": "restful-api-drugstorerx4.0",
   "version": "0.0.1",
   "description": "RESTful API using Node JS, Express JS, and MS SQL Server",
   "main": "server.js",
   "dependencies": {
     "async": "^2.5.0",
+    "bcryptjs": "^2.4.3",
     "body-parser": "^1.15.2",
+    "cors": "^2.8.5",
     "express": "^4.14.0",
-    "mssql": "^ 3.3.0"
+    "jsonwebtoken": "^8.3.0",
+    "mssql": "^ 3.3.0",
+    "nan": "^2.14.0",
+    "node-pre-gyp": "^0.14.0",
+    "nodeunit": "^0.11.3"
   },
   "scripts": {
-    "start dev": "NODE_ENV='development' node server.js"
+    "start dev": "NODE_ENV='development' node server.js",
+    "resources": "cordova-res ios && cordova-res android && node scripts/resources.js"
   },
   "author": {
-    "name": "Vlad povalii",
-    "email": "vladpovalii@gmail.com"
+    "name": "Nuttapong Imbumrung",
+    "email": "admin@drugstoresoft.com"
   }
 }

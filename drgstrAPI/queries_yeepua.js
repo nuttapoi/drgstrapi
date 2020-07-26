@@ -1,5 +1,7 @@
 var sql = require("mssql");
 var async = require('async');
+var jwt = require('jsonwebtoken');
+var bcrypt = require('bcryptjs');
 // var Request = require('tedious').Request;  
 // var TYPES = require('tedious').TYPES;  
 // var Connection = require('tedious').Connection;  
@@ -14,6 +16,34 @@ var dbConfig = {
     server: config.database.host,
     database: config.database.db
 };
+
+var fs  = require('fs')
+
+function base64_encode(file) {
+    // read binary data
+    var bitmap = fs.readFileSync(file);
+    // convert binary data to base64 encoded string
+    return new Buffer(bitmap).toString('base64');
+}
+
+function extend(){
+    if(arguments.length === 0){ return; }
+    var x = arguments.length === 1 ? this : arguments[0];
+    var y;
+
+    for(var i = 1, len = arguments.length; i < len; i++) {
+        y = arguments[i];
+        for(var key in y){
+            if(!(y[key] instanceof Function)){
+                x[key] = y[key];
+            }
+        }           
+    };
+
+    return x;
+}
+//var bitmap = base64_encode("c:/programData/DrugStoreRx/images/product/image.jpg");
+
 
 var executeQuery = function(res, query){             
 	sql.connect(dbConfig, function (err) {
@@ -30,15 +60,48 @@ var executeQuery = function(res, query){
 		            console.log("Error while querying database :- " + err);
 		    	    res.status(500).send(JSON.stringify({error: err}));
 		        } else {
-					console.log(res);
+					console.log(recordsets);
 		            res.send(recordsets);
 		        }
 		    });
 		}
 	});           
 }
+
+function verifyToken(req, res, next) {
+
+	// check header or url parameters or post parameters for token
+	var token = req.body.token || req.query.token || req.headers['x-access-token'];
+  
+	// decode token
+	if (token) {
+  
+	  // verifies secret and checks exp
+	  jwt.verify(token, 'SuperSecret', function(err, decoded) {      
+		if (err) {
+		  return res.json({ success: false, message: 'Failed to authenticate token.' });    
+		} else {
+		  // if everything is good, save to request for use in other routes
+		  req.decoded = decoded;    
+		  next();
+		}
+	  });
+  
+	} else {
+  
+	  // if there is no token
+	  // return an error
+	  return res.status(403).send({ 
+		  success: false, 
+		  message: 'No token provided.' 
+	  });
+  
+	}
+}
+
 //yeepua
 function getUser(req , res) {
+	//console.log("get login");
 	sql.connect(dbConfig, function (err) {
 		if (err) {   
 			console.log("Error while connecting database :- " + err);
@@ -46,10 +109,10 @@ function getUser(req , res) {
 		}else {
 		    // create Request object
 		    var request = new sql.Request();
-
+			console.log("user loging");
 			request.input('loginName', sql.VarChar,req.body.userName);
 			request.input('pass', sql.VarChar,req.body.password);
-		    request.execute('tb_user_ValidateLogin', function (err, recordsets, returnValue) {
+		    request.execute('m_customer_ValidateLogin', function (err, recordsets, returnValue) {
 		        if (err) {
 		            // console.log("Error while querying database :- " + err);
 		    	    res.status(500).send(JSON.stringify({error: err}));
@@ -59,8 +122,13 @@ function getUser(req , res) {
 						// console.log(JSON.stringify({status:'denied', user: recordsets[0][0]}));
 						res.status(401).send({status:'Access denied'});
 					}else{
-						// console.log(JSON.stringify({status:'success', user: recordsets[0][0].userID}));
-						res.send({status:'Success', user: recordsets[0][0]});
+						// console.log(JSON.stringify({status:'success', user: recordsets[0][0]}));
+						// res.send({status:'Success', user: recordsets[0][0]});
+						// jwt.sign({userID: recordsets[0][0].userID, userName: recordsets[0][0].userName}, 'RESTFULAPIs')
+						var token = jwt.sign({cusID: recordsets[0][0].cusID, cusName: recordsets[0][0].cusName}, 'SuperSecret', {
+							expiresIn: 60 // expires in 1 hours
+						  });
+						return res.json({auth:true,token:token,user:recordsets[0][0]});
 					
 			        //res.send(JSON.stringify(recordsets).slice(1, -1));
 					}
@@ -70,17 +138,60 @@ function getUser(req , res) {
 	});  
 }
 
-function getBuyItems(req, res) {
+/* function getBuyItems(req, res) {
 	var query = "select '1971030012' as billID, 0 as ItemNO, tb_posUnit.productID,tb_product.businessName, \
 	tb_posUnit.saleE as salePrice,tb_posUnit.unitNameS as saleUnitName, \
 	1 as itemQTY, tb_posUnit.saleE as itemValue \
 	from tb_posUnit inner join tb_product on tb_product.productID = tb_posUnit.productID \
 	where tb_product.businessName like '" + req.query.name + "%' and (statusActive = 0) and (pharmacafe = 1) ";
 
-    executeQuery(res, query);
+	sql.connect(dbConfig, function (err) {
+		if (err) {   
+			console.log("Error while connecting database :- " + err);
+			res.status(500).send(JSON.stringify({error: err}));
+		}
+		else {
+		    // create Request object
+		    var request = new sql.Request();
+		    // query to the database
+		    request.query(query, function (err, recordsets, returnValue) {
+		        if (err) {
+		            console.log("Error while querying database :- " + err);
+		    	    res.status(500).send(JSON.stringify({error: err}));
+		        } else {
+					res.send(recordsets);
+		        }
+		    });
+		}
+	});  
+    //executeQuery(res, query);
+} */
+
+function getBuyItems(req, res) {
+	sql.connect(dbConfig, function (err) {
+		if (err) {   
+			console.log("Error while connecting database :- " + err);
+			res.status(500).send(JSON.stringify({error: err}));
+		}
+		else {
+		    // create Request object
+		    var request = new sql.Request();
+
+			request.input('businessName', sql.VarChar,req.query.name);
+		    request.execute('m_yeepua_itemBuy', function (err, recordsets, returnValue) {
+		        if (err) {
+		            console.log("Error while querying database :- " + err);
+		    	    res.status(500).send(JSON.stringify({error: err}));
+		        } else {
+		        	//console.log(res);
+			        res.send(JSON.stringify(recordsets).slice(1, -1));
+			    }
+		    });
+		}
+	});  
 }
 
-function getBuyItemByBarcode(req , res) {
+/* function getBuyItemByBarcode(req , res) {
 	sql.connect(dbConfig, function (err) {
 		if (err) {   
 			console.log("Error while connecting database :- " + err);
@@ -91,17 +202,42 @@ function getBuyItemByBarcode(req , res) {
 		    var request = new sql.Request();
 
 			request.input('barcode', sql.VarChar,req.params.id);
-		    request.execute('m_inventory_barcode', function (err, recordsets, returnValue) {
+		    request.execute('m_yeepua_barcode', function (err, recordsets, returnValue) {
 		        if (err) {
 		            console.log("Error while querying database :- " + err);
 		    	    res.status(500).send(JSON.stringify({error: err}));
 		        } else {
-		        	console.log(res);
+		        	console.log(JSON.stringify(recordsets).slice(1, -1));
 			        res.send(JSON.stringify(recordsets).slice(1, -1));
 			    }
 		    });
 		}
 	});  
+} */
+
+function getPromotion(req, res) {
+	var query = "select tb_campaignDetail.*,tb_campaign.startDate,tb_campaign.endDate,\
+	tb_campaign.campaignName, tb_product.businessName\
+	from tb_campaignDetail\
+	inner join tb_campaign on tb_campaign.promoID = tb_campaignDetail.promoID\
+	inner join tb_product on tb_product.productID = tb_campaignDetail.productID\
+	where (tb_campaign.isActive = 1) and (tb_product.statusActive = 0) and (tb_product.pharmacafe = 1)";
+
+	executeQuery(res, query);
+}
+
+function getItemImage(req , res) {
+	fs.readFile('c:/programData/DrugStoreRx/images/product/'+ req.params.id +'.jpg', function(err, contents) {
+		if (err){
+			var blankImg = "/9j/4AAQSkZJRgABAQEAYABgAAD//gA7Q1JFQVRPUjogZ2QtanBlZyB2MS4wICh1c2luZyBJSkcgSlBFRyB2NjIpLCBxdWFsaXR5ID0gOTAK/9sAQwAGBAUGBQQGBgUGBwcGCAoQCgoJCQoUDg8MEBcUGBgXFBYWGh0lHxobIxwWFiAsICMmJykqKRkfLTAtKDAlKCko/9sAQwEHBwcKCAoTCgoTKBoWGigoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgo/8AAEQgAIAAgAwEiAAIRAQMRAf/EABkAAAMAAwAAAAAAAAAAAAAAAAIEBQADCP/EACcQAAIBBAEDAgcAAAAAAAAAAAECAwAEBREhEkFRIjETJEJhcZHR/8QAFAEBAAAAAAAAAAAAAAAAAAAAAP/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AOqaSvcjFaSrGUklkYb6YxsgVpz5b4FuisyiSZUbpOjrmgW1FhP8sD6l3LPMdhFHYff+UDdpfw3MUkgDRiM6cSDRWgx9695LKyRatRwjn3Y9+PFT3dsw8wjYx2UXLa4Mjap/AsWxNuWOzoj9EigLK25nSA9aokUokZm7AA1Jv57jJsBBBM1kD9HpLn8mquQs3vJYleXptRy6D3Y9ufFOoiogVAFUDQA7UEO1kntbZoYMXKAd7JcEk+faqOHhe3xsMUo04B2PGyTTlZQf/9k="
+			res.send(JSON.stringify({imageBase64: blankImg}));
+		}else {
+			//console.log("image64");
+			var buffer =new Buffer(contents).toString('base64');	
+			//console.log(buffer);
+			res.send(JSON.stringify({imageBase64: buffer}));		
+		}
+	}); 
 }
 
 function insertBuyItemsTrans(req , res) {
@@ -109,12 +245,13 @@ function insertBuyItemsTrans(req , res) {
 	var connection;
 	var request;
 	var ps;
-	var quoData = req.body;
-	console.log(quoData);
-	var quoHeader = quoData[0];
-	var quoDetail = quoData[1];
+	//var quoData = req.body;
+	//console.log(quoData);
+	var quoHeader = JSON.parse(req.headers['bill-header']);
+  	//var quoHeader = quoData[0];
+	var quoDetail = req.body;
+	console.log(quoDetail);
 	var quoID;
-	var totalPrice=0;
 	var trans_1 = false;
 	var trans_2 = false;
 
@@ -137,17 +274,15 @@ function insertBuyItemsTrans(req , res) {
 		},
 		function(callback) {
 			request = new sql.Request(transaction); 
-			console.log("select query");
 			// request.output('newID', sql.Char(10));
-		    request.execute('m_getQuoID_SEL', function(err, recordset) {
-				console.log(recordset);
-				console.log(recordset[0][0].newQuoID);
-				quoID = recordset[0][0].newQuoID;
+		    request.execute('m_getQuoID_SEL', function(err, recordset,returnValue) {
+				//console.log("debug" + returnValue);
+				//console.log(recordset[0][0].newQuoID);
+				quoID = returnValue;
 				callback(err);
 			});
 		},
 		function(callback) {
-			console.log("insert tb_quotation");
 			// update quoID in req.body
 			for(var i = 0; i < quoDetail.length; i++) {
 				var obj = quoDetail[i];
@@ -156,13 +291,23 @@ function insertBuyItemsTrans(req , res) {
 			request = new sql.Request(transaction);  
 	
 			request.input('billID', sql.Char (10), quoID);
-			request.input('cusID', sql.Char (5),quoHeader.cusID);
+			request.input('cusID', sql.Char (8),quoHeader.cusID);
+			console.log(quoHeader.cusID);
 			request.input('saleDate', sql.VarChar, quoHeader.saleDate);
+			request.input('deliDate', sql.VarChar, quoHeader.deliDate);
+			request.input('expDate', sql.VarChar, quoHeader.expDate);
+			request.input('standPrice', sql.VarChar, quoHeader.standPrice);
+			request.input('creditDay', sql.VarChar(20), quoHeader.creditDay);
 			request.input('totalPrice', sql.Real, quoHeader.totalPrice);
+			request.input('discount100', sql.Real, quoHeader.discount100);
+			request.input('discountTHB', sql.Real, quoHeader.discountTHB);
+			request.input('netSale', sql.Real, quoHeader.netSale);
+			request.input('payBy', sql.Real,quoHeader.payBy);
 			request.input('userID', sql.Char (5),quoHeader.userID);
+			request.input('ipAddress', sql.VarChar (15),quoHeader.ipAddress);
 			request.input('saleNote', sql.NVarChar (200),quoHeader.saleNote);
-			request.input('ipAddress', sql.VarChar (10),quoHeader.ipAddress);
-		    request.execute('m_quotation_INS', function(err, recordset) {
+
+		    request.execute('tb_quotation_INS', function(err, recordset) {
 				if (err) {
 					console.log("m_quotation_INS err");
 					trans_2 = true;
@@ -172,8 +317,6 @@ function insertBuyItemsTrans(req , res) {
 		},
 		function(callback){
 			ps = new sql.PreparedStatement(connection);
-			console.log("billID in: " + quoID);
-
 			var strSQL = "INSERT INTO  tb_quoDetail \
 				(billID,	ItemNO,	productID,	itemQTY, saleUnitName, salePrice) \
 				Values ( @billID,	@ItemNO, 	@productID,	@itemQTY,	@saleUnitName,	@salePrice)";
@@ -234,21 +377,72 @@ function insertBuyItemsTrans(req , res) {
 			console.log("err");
 			res.status(500).send(JSON.stringify({error: err}));
 		}else{
-			console.log("final result");
+			// console.log("final result");
 			res.send(JSON.stringify("Success"));
 			// res.send("201 Created");
 		}
 		
 	});
+}
+
+function getBuyItemByBarcode(req , res){
+	async.waterfall([
+		function firstStep(callback) {
+			sql.connect(dbConfig, function (err) {
+				if (!err) {   
+					// create Request object
+					var request = new sql.Request();
+					request.input('barcode', sql.VarChar,req.params.id);
+					request.execute('m_yeepua_barcode', function (err, recordsets, returnValue) {
+						if (!err) {
+							callback(null, JSON.stringify(recordsets).slice(1, -1)); // <- set value to passed to step 2
+							//callback(null, recordsets); // <- set value to passed to step 2
+						}
+					});
+				}
+			});  
+
+		},
+		function secondStep(step1Result, callback) {
+			fs.readFile('c:/programData/DrugStoreRx/images/product/'+ req.params.id +'.jpg', function(err, contents) {
+				if (err){
+					var blankImg = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD//gA7Q1JFQVRPUjogZ2QtanBlZyB2MS4wICh1c2luZyBJSkcgSlBFRyB2NjIpLCBxdWFsaXR5ID0gOTAK/9sAQwAGBAUGBQQGBgUGBwcGCAoQCgoJCQoUDg8MEBcUGBgXFBYWGh0lHxobIxwWFiAsICMmJykqKRkfLTAtKDAlKCko/9sAQwEHBwcKCAoTCgoTKBoWGigoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgo/8AAEQgAIAAgAwEiAAIRAQMRAf/EABkAAAMAAwAAAAAAAAAAAAAAAAIEBQADCP/EACcQAAIBBAEDAgcAAAAAAAAAAAECAwAEBREhEkFRIjETJEJhcZHR/8QAFAEBAAAAAAAAAAAAAAAAAAAAAP/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AOqaSvcjFaSrGUklkYb6YxsgVpz5b4FuisyiSZUbpOjrmgW1FhP8sD6l3LPMdhFHYff+UDdpfw3MUkgDRiM6cSDRWgx9695LKyRatRwjn3Y9+PFT3dsw8wjYx2UXLa4Mjap/AsWxNuWOzoj9EigLK25nSA9aokUokZm7AA1Jv57jJsBBBM1kD9HpLn8mquQs3vJYleXptRy6D3Y9ufFOoiogVAFUDQA7UEO1kntbZoYMXKAd7JcEk+faqOHhe3xsMUo04B2PGyTTlZQf/9k="
+					var final = JSON.parse(step1Result);
+					if (!final) {
+						final[0].imageBase64=blankImg; 
+						// console.log(final);
+					}
+					res.send(JSON.stringify(final));
+				}else {
+					//console.log("image64");
+					var buffer =new Buffer(contents).toString('base64');
+					var final = JSON.parse(step1Result);
+					final[0].imageBase64="data:image/jpeg;base64," + buffer; 
+					// console.log(final);					
+					res.send(JSON.stringify(final));		
+				}
+			}); 
+			callback(null); 
+		  },
+		],
+		
+		function (err) {
+		  if (err) {
+			res.status(500).send(JSON.stringify({error: err}));
+		  }
+		});
 }	
 
 // fun
 
 module.exports = {
+  verifyToken:verifyToken,
   getUser:getUser,
+  getItemImage: getItemImage,
   getBuyItems: getBuyItems,
   getBuyItemByBarcode: getBuyItemByBarcode,
   insertBuyItemsTrans: insertBuyItemsTrans,
+  getPromotion: getPromotion,
 };
 
 // function InsertQuotation(req , res) {

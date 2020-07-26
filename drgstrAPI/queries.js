@@ -267,6 +267,172 @@ function updateItemQty(req , res) {
 	});  
 }
 
+
+//linebot
+function getOrderBySupID(req , res) {
+	sql.connect(dbConfig, function (err) {
+		if (err) {   
+			console.log("Error while connecting database :- " + err);
+			res.send(err);
+		}
+		else {
+		    // create Request object
+		    var request = new sql.Request();
+
+			request.input('supID', sql.VarChar,req.params.id);
+		    request.execute('m_inventory_OrderBySupID', function (err, recordsets, returnValue) {
+		        if (err) {
+		            console.log("Error while querying database :- " + err);
+		    	    res.send(err);
+		        } else {
+		        	console.log(res);
+			        res.send(JSON.stringify(recordsets).slice(1, -1));
+					// req.body =JSON.stringify(recordsets).slice(1, -1);
+			        }
+		    });
+		}
+	});  
+}
+
+function getDailyReport(req , res) {
+	sql.connect(dbConfig, function (err) {
+		if (err) {   
+			console.log("Error while connecting database :- " + err);
+			res.send(err);
+		}
+		else {
+		    // create Request object
+		    var request = new sql.Request();
+			request.input('fromDate', sql.VarChar,new Date().toISOString());
+			request.input('toDate', sql.VarChar, new Date().toISOString());
+			//request.input('supID', sql.VarChar,req.params.id);
+		    request.execute('m_sale_ByDate', function (err, recordsets, returnValue) {
+		        if (err) {
+		            console.log("Error while querying database :- " + err);
+		    	    res.send(err);
+		        } else {
+		        	console.log(res);
+			        res.send(JSON.stringify(recordsets).slice(1, -1));
+					// req.body =JSON.stringify(recordsets).slice(1, -1);
+			        }
+		    });
+		}
+	});  
+}
+//editLots
+function getLotsByBarcode(req , res) {
+	sql.connect(dbConfig, function (err) {
+		if (err) {   
+			console.log("Error while connecting database :- " + err);
+			res.send(err);
+		}
+		else {
+		    // create Request object
+		    var request = new sql.Request();
+
+			request.input('barcode', sql.VarChar,req.params.id);
+		    request.execute('m_inventory_lotsBarcode', function (err, recordsets, returnValue) {
+		        if (err) {
+		            console.log("Error while querying database :- " + err);
+		    	    res.send(err);
+		        } else {
+		        	console.log(res);
+			        res.send(JSON.stringify(recordsets).slice(1, -1));
+			        }
+		    });
+		}
+	});  
+}
+
+function getLotsByID(req , res) {
+	sql.connect(dbConfig, function (err) {
+		if (err) {   
+			console.log("Error while connecting database :- " + err);
+			res.send(err);
+		}
+		else {
+		    // create Request object
+		    var request = new sql.Request();
+
+			request.input('productID', sql.VarChar,req.params.id);
+		    request.execute('m_inventory_productID', function (err, recordsets, returnValue) {
+		        if (err) {
+		            console.log("Error while querying database :- " + err);
+		    	    res.send(err);
+		        } else {
+		        	console.log(res);
+			        res.send(JSON.stringify(recordsets).slice(1, -1));
+			        }
+		    });
+		}
+	});  
+}
+
+function updateLots(req , res) {
+	var connection;
+	var request;
+	var ps;
+	var lotsDetail = req.body;
+	console.log(lotsDetail);
+
+	async.waterfall([
+		function(callback) {
+			connection = new sql.Connection(dbConfig, 
+				function(err) {
+					console.log("connect");
+					callback(err);
+				}
+			);
+		},
+
+		function(callback){
+			ps = new sql.PreparedStatement(connection);
+			var strSQL = "update tb_inventory set qtyNow = @qtyNow, \
+				lotNumber = @lotNumber, dateExpire = @dateExpire \
+				where fifoIDX = @fifoIDX";
+
+			ps.input('fifoIDX', sql.Int);
+			ps.input('qtyNow', sql.Float);
+			ps.input('lotNumber', sql.VarChar(10));
+			ps.input('dateExpire', sql.VarChar);
+
+			ps.prepare(strSQL, function(err) {
+				console.log("prepare");
+				callback(err);
+			});
+		},
+		function(callback){
+				console.log("start asyn.mapseries");
+				async.mapSeries(lotsDetail, function(lotsDetail, next) {
+					ps.execute({fifoIDX: lotsDetail.fifoIDX, 
+					qtyNow: lotsDetail.qtyNow, lotNumber: lotsDetail.lotNumber,
+					dateExpire: lotsDetail.dateExpire}, next);
+					}, function(err) {
+						callback(err);
+					}
+				);
+		},
+		function(callback){
+			console.log("unprepared");
+			// ... error checks
+			ps.unprepare(function(err) {
+				callback(err)
+			});
+		},
+	], function(err) {
+		// ... error checks should go here :
+		// output query result to console:
+		if (err) {
+			console.log("err");
+			res.status(500).send(JSON.stringify({error: err}));
+		}else{
+			console.log("Success");
+			res.send(JSON.stringify("Success"));
+		}
+		
+	});
+}
+
 module.exports = {
   getProfitReport: getProfitReport,
   getProfitByUser: getProfitByUser,
@@ -278,4 +444,9 @@ module.exports = {
   getItems: getItems,
   getItemByBarcode: getItemByBarcode,
   updateItemQty: updateItemQty,
+  getLotsByBarcode: getLotsByBarcode,
+  getLotsByID: getLotsByID,
+  updateLots: updateLots,
+  getOrderBySupID: getOrderBySupID,
+  getDailyReport: getDailyReport
 };
