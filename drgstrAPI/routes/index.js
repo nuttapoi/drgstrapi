@@ -18,6 +18,7 @@ router.get('/api/rpt_minSupplier', db.getMinSupplier);
 router.get('/api/rpt_minStock/:id', db.getMinBySupID);
 router.get('/api/rpt_invSupplier', db.getInvSupplier);
 router.get('/api/rpt_invStock/:id', db.getInvBySupID);
+
 //datacollector
 router.get('/api/datacollector', db.getItems);
 router.get('/api/datacollector/:id', db.getItemByBarcode);
@@ -26,6 +27,13 @@ router.get('/api/rpt_getLotDetail/:id', db.getLotsByID);
 router.get('/api/rpt_getLotDetail/:id/barcode', db.getLotsByBarcode);
 router.put('/api/rpt_getLotDetail', db.updateLots);
 
+//image upload
+router.get('/api/product/:id/image', db_yeepua.getItemImage);
+router.put('/api/product/:id/image', db_yeepua.saveItemImage);
+
+//edit barcode upload
+router.get('/api/product/:id/barcode', db.getBarcodeByID);
+router.put('/api/product/:id/barcode', db.updateBarcodeByID);
 //linebot
 router.get('/api/bot_pushOrder/:id', db.getOrderBySupID);
 router.get('/api/bot_pushDaily', db.getDailyReport);
@@ -37,7 +45,6 @@ router.get('/api/yeepua/promotion', db_yeepua.getPromotion);
 router.post('/api/logout', function(req, res) {
   res.status(200).send({ auth: false, token: null });
 });
-router.get('/api/yeepua/:id/image', db_yeepua.getItemImage);
 router.get('/api/yeepua/:id/barcode', db_yeepua.getBuyItemByBarcode);
 router.get('/api/yeepua', db_yeepua.getBuyItems);
 // route middleware to verify a token

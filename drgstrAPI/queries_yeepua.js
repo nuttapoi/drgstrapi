@@ -17,6 +17,7 @@ var dbConfig = {
     database: config.database.db
 };
 
+// image save/serve
 var fs  = require('fs')
 
 function base64_encode(file) {
@@ -24,6 +25,20 @@ function base64_encode(file) {
     var bitmap = fs.readFileSync(file);
     // convert binary data to base64 encoded string
     return new Buffer(bitmap).toString('base64');
+}
+
+function decodeBase64Image(dataString) {
+  var matches = dataString.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/),
+    response = {};
+
+  if (matches.length !== 3) {
+    return new Error('Invalid input string');
+  }
+
+  response.type = matches[1];
+  response.data = new Buffer(matches[2], 'base64');
+
+  return response;
 }
 
 function extend(){
@@ -43,6 +58,65 @@ function extend(){
     return x;
 }
 //var bitmap = base64_encode("c:/programData/DrugStoreRx/images/product/image.jpg");
+
+function getItemImage(req , res) {
+	fs.readFile('c:/programData/DrugStoreRx/images/product/'+ req.params.id +'.jpg', function(err, contents) {
+		if (err){
+			var blankImg = "/9j/4AAQSkZJRgABAQEAYABgAAD//gA7Q1JFQVRPUjogZ2QtanBlZyB2MS4wICh1c2luZyBJSkcgSlBFRyB2NjIpLCBxdWFsaXR5ID0gOTAK/9sAQwAGBAUGBQQGBgUGBwcGCAoQCgoJCQoUDg8MEBcUGBgXFBYWGh0lHxobIxwWFiAsICMmJykqKRkfLTAtKDAlKCko/9sAQwEHBwcKCAoTCgoTKBoWGigoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgo/8AAEQgAIAAgAwEiAAIRAQMRAf/EABkAAAMAAwAAAAAAAAAAAAAAAAIEBQADCP/EACcQAAIBBAEDAgcAAAAAAAAAAAECAwAEBREhEkFRIjETJEJhcZHR/8QAFAEBAAAAAAAAAAAAAAAAAAAAAP/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AOqaSvcjFaSrGUklkYb6YxsgVpz5b4FuisyiSZUbpOjrmgW1FhP8sD6l3LPMdhFHYff+UDdpfw3MUkgDRiM6cSDRWgx9695LKyRatRwjn3Y9+PFT3dsw8wjYx2UXLa4Mjap/AsWxNuWOzoj9EigLK25nSA9aokUokZm7AA1Jv57jJsBBBM1kD9HpLn8mquQs3vJYleXptRy6D3Y9ufFOoiogVAFUDQA7UEO1kntbZoYMXKAd7JcEk+faqOHhe3xsMUo04B2PGyTTlZQf/9k="
+			res.send(JSON.stringify({imageBase64: blankImg}));
+		}else {
+			//console.log("image64");
+			var buffer =new Buffer(contents).toString('base64');	
+			//console.log(buffer);
+			res.send(JSON.stringify({imageBase64: buffer}));		
+		}
+	}); 
+}
+
+function saveItemImage(req , res) {
+	sql.connect(dbConfig, function (err) {
+		if (err) {   
+			console.log("Error while connecting database :- " + err);
+			return res.status(500).send(JSON.stringify({error: err}));
+		}
+		// create Request object
+		var request = new sql.Request();
+
+		request.input('productID', sql.VarChar,req.params.id);
+		request.execute('m_product_AddImage', function (err, recordsets, returnValue) {
+			if (err) {
+				console.log("Error while querying database :- " + err);
+				return	res.status(500).send(JSON.stringify({error: err}));
+			}
+			let fileName ='c:/programData/DrugStoreRx/images/product/'+ req.params.id +'.jpg'; 
+			let putImage = req.body.imageBase64;
+			let data = putImage.replace(/^data:image\/\w+;base64,/, '');
+			fs.writeFile(fileName, data, {encoding: 'base64'}, function(err){
+				if (err){
+					res.status(500).send(JSON.stringify({error: err}));
+				}else {
+					res.send(JSON.stringify({productID: req.params.id, imageBase64: data }));
+					// console.log("save image sucess");
+				}
+			}); 
+		});
+	});  
+}
+// function saveItemImage(req , res) {
+// 	let fileName ='c:/programData/DrugStoreRx/images/product/'+ req.params.id +'.jpg'; 
+// 	let putImage = req.body.imageBase64;
+// 	let data = putImage.replace(/^data:image\/\w+;base64,/, '');
+
+// 	fs.writeFile(fileName, data, {encoding: 'base64'}, function(err){
+// 		if (err){
+// 			res.status(500).send(JSON.stringify({error: err}));
+// 		}else {
+// 			res.send(JSON.stringify({productID: req.params.id, imageBase64: data }));
+// 			// console.log("save image sucess");
+// 		}
+// 	}); 
+// }
+
 
 
 var executeQuery = function(res, query){             
@@ -138,34 +212,6 @@ function getUser(req , res) {
 	});  
 }
 
-/* function getBuyItems(req, res) {
-	var query = "select '1971030012' as billID, 0 as ItemNO, tb_posUnit.productID,tb_product.businessName, \
-	tb_posUnit.saleE as salePrice,tb_posUnit.unitNameS as saleUnitName, \
-	1 as itemQTY, tb_posUnit.saleE as itemValue \
-	from tb_posUnit inner join tb_product on tb_product.productID = tb_posUnit.productID \
-	where tb_product.businessName like '" + req.query.name + "%' and (statusActive = 0) and (pharmacafe = 1) ";
-
-	sql.connect(dbConfig, function (err) {
-		if (err) {   
-			console.log("Error while connecting database :- " + err);
-			res.status(500).send(JSON.stringify({error: err}));
-		}
-		else {
-		    // create Request object
-		    var request = new sql.Request();
-		    // query to the database
-		    request.query(query, function (err, recordsets, returnValue) {
-		        if (err) {
-		            console.log("Error while querying database :- " + err);
-		    	    res.status(500).send(JSON.stringify({error: err}));
-		        } else {
-					res.send(recordsets);
-		        }
-		    });
-		}
-	});  
-    //executeQuery(res, query);
-} */
 
 function getBuyItems(req, res) {
 	sql.connect(dbConfig, function (err) {
@@ -191,30 +237,6 @@ function getBuyItems(req, res) {
 	});  
 }
 
-/* function getBuyItemByBarcode(req , res) {
-	sql.connect(dbConfig, function (err) {
-		if (err) {   
-			console.log("Error while connecting database :- " + err);
-			res.status(500).send(JSON.stringify({error: err}));
-		}
-		else {
-		    // create Request object
-		    var request = new sql.Request();
-
-			request.input('barcode', sql.VarChar,req.params.id);
-		    request.execute('m_yeepua_barcode', function (err, recordsets, returnValue) {
-		        if (err) {
-		            console.log("Error while querying database :- " + err);
-		    	    res.status(500).send(JSON.stringify({error: err}));
-		        } else {
-		        	console.log(JSON.stringify(recordsets).slice(1, -1));
-			        res.send(JSON.stringify(recordsets).slice(1, -1));
-			    }
-		    });
-		}
-	});  
-} */
-
 function getPromotion(req, res) {
 	var query = "select tb_campaignDetail.*,tb_campaign.startDate,tb_campaign.endDate,\
 	tb_campaign.campaignName, tb_product.businessName\
@@ -224,20 +246,6 @@ function getPromotion(req, res) {
 	where (tb_campaign.isActive = 1) and (tb_product.statusActive = 0) and (tb_product.pharmacafe = 1)";
 
 	executeQuery(res, query);
-}
-
-function getItemImage(req , res) {
-	fs.readFile('c:/programData/DrugStoreRx/images/product/'+ req.params.id +'.jpg', function(err, contents) {
-		if (err){
-			var blankImg = "/9j/4AAQSkZJRgABAQEAYABgAAD//gA7Q1JFQVRPUjogZ2QtanBlZyB2MS4wICh1c2luZyBJSkcgSlBFRyB2NjIpLCBxdWFsaXR5ID0gOTAK/9sAQwAGBAUGBQQGBgUGBwcGCAoQCgoJCQoUDg8MEBcUGBgXFBYWGh0lHxobIxwWFiAsICMmJykqKRkfLTAtKDAlKCko/9sAQwEHBwcKCAoTCgoTKBoWGigoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgo/8AAEQgAIAAgAwEiAAIRAQMRAf/EABkAAAMAAwAAAAAAAAAAAAAAAAIEBQADCP/EACcQAAIBBAEDAgcAAAAAAAAAAAECAwAEBREhEkFRIjETJEJhcZHR/8QAFAEBAAAAAAAAAAAAAAAAAAAAAP/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AOqaSvcjFaSrGUklkYb6YxsgVpz5b4FuisyiSZUbpOjrmgW1FhP8sD6l3LPMdhFHYff+UDdpfw3MUkgDRiM6cSDRWgx9695LKyRatRwjn3Y9+PFT3dsw8wjYx2UXLa4Mjap/AsWxNuWOzoj9EigLK25nSA9aokUokZm7AA1Jv57jJsBBBM1kD9HpLn8mquQs3vJYleXptRy6D3Y9ufFOoiogVAFUDQA7UEO1kntbZoYMXKAd7JcEk+faqOHhe3xsMUo04B2PGyTTlZQf/9k="
-			res.send(JSON.stringify({imageBase64: blankImg}));
-		}else {
-			//console.log("image64");
-			var buffer =new Buffer(contents).toString('base64');	
-			//console.log(buffer);
-			res.send(JSON.stringify({imageBase64: buffer}));		
-		}
-	}); 
 }
 
 function insertBuyItemsTrans(req , res) {
@@ -439,6 +447,7 @@ module.exports = {
   verifyToken:verifyToken,
   getUser:getUser,
   getItemImage: getItemImage,
+  saveItemImage: saveItemImage,
   getBuyItems: getBuyItems,
   getBuyItemByBarcode: getBuyItemByBarcode,
   insertBuyItemsTrans: insertBuyItemsTrans,

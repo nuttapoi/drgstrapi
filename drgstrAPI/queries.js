@@ -15,6 +15,7 @@ var dbConfig = {
     database: config.database.db
 };
 
+var fs  = require('fs')
 // var config = {  
 //         userName: 'sa',  
 //         password: '123456',  
@@ -432,6 +433,132 @@ function updateLots(req , res) {
 		
 	});
 }
+//editBarcode
+// async function asyncTask () {
+//   try {
+//     const valueA = await functionA();
+//     const valueB = await functionB(valueA);
+//     const valueC = await functionC(valueB);
+//     return await functionD(valueC);
+//   } catch (err) {
+//     logger.error(err);
+//   }
+// }
+
+async function getBarcodeByIDAsync(req , res) {
+    try {
+        let pool = await sql.connect(dbConfig)
+        let result1 = await pool.request()
+            .input('productID', sql.Char(6), value)
+            .execute('m_posUnit_GetByID') 
+		console.dir(result1)
+		
+	    let img = await fs.readFile('c:/programData/DrugStoreRx/images/product/'+ req.params.id +'.jpg');
+		return res.send(JSON.stringify(result1).slice(1, -1));
+    } catch (err) {
+			res.status(500).send(JSON.stringify({error: err}));
+        // ... error checks
+    }
+}
+
+function getBarcodeByID(req , res) {
+	sql.connect(dbConfig, function (err) {
+		if (err) {   
+			console.log("Error while connecting database :- " + err);
+			res.send(err);
+		}
+		// create Request object
+		var request = new sql.Request();
+
+		request.input('productID', sql.VarChar,req.params.id);
+		request.execute('m_posUnit_GetByID', function (err, recordsets, returnValue) {
+			if (err) {
+				console.log("Error while querying database :- " + err);
+				res.send(err);
+			}
+			let reqImage = 'c:/programData/DrugStoreRx/images/product/'+ req.params.id +'.jpg';
+			let blankImg = "/9j/4AAQSkZJRgABAQEAYABgAAD//gA7Q1JFQVRPUjogZ2QtanBlZyB2MS4wICh1c2luZyBJSkcgSlBFRyB2NjIpLCBxdWFsaXR5ID0gOTAK/9sAQwAGBAUGBQQGBgUGBwcGCAoQCgoJCQoUDg8MEBcUGBgXFBYWGh0lHxobIxwWFiAsICMmJykqKRkfLTAtKDAlKCko/9sAQwEHBwcKCAoTCgoTKBoWGigoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgo/8AAEQgAIAAgAwEiAAIRAQMRAf/EABkAAAMAAwAAAAAAAAAAAAAAAAIEBQADCP/EACcQAAIBBAEDAgcAAAAAAAAAAAECAwAEBREhEkFRIjETJEJhcZHR/8QAFAEBAAAAAAAAAAAAAAAAAAAAAP/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AOqaSvcjFaSrGUklkYb6YxsgVpz5b4FuisyiSZUbpOjrmgW1FhP8sD6l3LPMdhFHYff+UDdpfw3MUkgDRiM6cSDRWgx9695LKyRatRwjn3Y9+PFT3dsw8wjYx2UXLa4Mjap/AsWxNuWOzoj9EigLK25nSA9aokUokZm7AA1Jv57jJsBBBM1kD9HpLn8mquQs3vJYleXptRy6D3Y9ufFOoiogVAFUDQA7UEO1kntbZoYMXKAd7JcEk+faqOHhe3xsMUo04B2PGyTTlZQf/9k="
+			fs.readFile(reqImage,function(err,data) {
+				if (!err)
+				{
+					let buffer =new Buffer(data).toString('base64');	
+					blankImg = buffer;
+					console.log("Error while reading image file :- " + err);
+				}
+				recordsets[0][0].imageBase64 = blankImg;
+				console.log(recordsets);
+				res.send(JSON.stringify(recordsets).slice(1, -1));
+			});
+		});
+	});  
+}
+
+function updateBarcodeByID(req , res) {
+	var connection;
+	var request;
+	var ps;
+	var posUnit = req.body;
+	console.log(posUnit);
+
+	async.waterfall([
+		function(callback) {
+			connection = new sql.Connection(dbConfig, 
+				function(err) {
+					console.log("connect");
+					callback(err);
+				}
+			);
+		},
+
+		function(callback){
+			ps = new sql.PreparedStatement(connection);
+			var strSQL = "update tb_posUnit set saleBarcode = @saleBarcode, \
+				barcodeOnly = @barcodeOnly \
+				where productID = @productID and unitNameX = @unitNameX";
+
+			ps.input('productID', sql.Char(6));
+			ps.input('unitNameX', sql.Int);
+			ps.input('saleBarcode', sql.VarChar);
+			ps.input('barcodeOnly', sql.Bit);
+
+			ps.prepare(strSQL, function(err) {
+				console.log("prepare");
+				callback(err);
+			});
+		},
+
+		function(callback){
+				console.log("start asyn.mapseries");
+				async.mapSeries(posUnit, function(posUnit, next) {
+					ps.execute({productID: posUnit.productID, 
+					unitNameX: posUnit.unitNameX, saleBarcode: posUnit.saleBarcode,
+					barcodeOnly: posUnit.barcodeOnly}, next);
+					}, function(err) {
+						callback(err);
+					}
+				);
+		},
+		function(callback){
+			console.log("unprepared");
+			// ... error checks
+			ps.unprepare(function(err) {
+				callback(err)
+			});
+		},
+	], function(err) {
+		// ... error checks should go here :
+		// output query result to console:
+		if (err) {
+			console.log("err");
+			res.status(500).send(JSON.stringify({error: err}));
+		}else{
+			console.log("Success");
+			res.send(JSON.stringify("Success"));
+		}
+		
+	});
+}
+
 
 module.exports = {
   getProfitReport: getProfitReport,
@@ -448,5 +575,8 @@ module.exports = {
   getLotsByID: getLotsByID,
   updateLots: updateLots,
   getOrderBySupID: getOrderBySupID,
-  getDailyReport: getDailyReport
+  getDailyReport: getDailyReport,
+  getBarcodeByID: getBarcodeByID,
+  getBarcodeByIDAsync: getBarcodeByIDAsync,
+  updateBarcodeByID: updateBarcodeByID,
 };
