@@ -4,7 +4,7 @@
 #define MyAppName "drgstrAPI"
 #define MyAppShortName "drgstrAPI"
 #define MyAppLCShortName "drgstrAPI"
-#define MyAppVersion "3.0"
+#define MyAppVersion "4.0"
 #define MyAppPublisher "drugstoresoft"
 #define MyAppURL "http://drugstoresoft.com/"
 #define MyAppExeName "winstart-browser.bat"

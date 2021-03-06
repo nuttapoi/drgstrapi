@@ -2,6 +2,7 @@ var express = require("express");
 var cors = require("cors");
 var bodyParser = require("body-parser");
 var app = express();
+var path = require('path');
 
 var env = process.env.NODE_ENV || 'development';
 var config = require('./config')[env];
@@ -31,6 +32,7 @@ app.use(cors())
 app.use(bodyParser.urlencoded({extended:false}));
 app.use(bodyParser.json());
 app.use(express.static(__dirname + '/public'));
+app.use('/productImages',express.static('c:/programdata/drugstorerx/images/product/'));
 
 // CORS Middleware
 //app.use(function (req, res, next) {

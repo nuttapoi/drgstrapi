@@ -63,12 +63,12 @@ function getItemImage(req , res) {
 	fs.readFile('c:/programData/DrugStoreRx/images/product/'+ req.params.id +'.jpg', function(err, contents) {
 		if (err){
 			var blankImg = "/9j/4AAQSkZJRgABAQEAYABgAAD//gA7Q1JFQVRPUjogZ2QtanBlZyB2MS4wICh1c2luZyBJSkcgSlBFRyB2NjIpLCBxdWFsaXR5ID0gOTAK/9sAQwAGBAUGBQQGBgUGBwcGCAoQCgoJCQoUDg8MEBcUGBgXFBYWGh0lHxobIxwWFiAsICMmJykqKRkfLTAtKDAlKCko/9sAQwEHBwcKCAoTCgoTKBoWGigoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgo/8AAEQgAIAAgAwEiAAIRAQMRAf/EABkAAAMAAwAAAAAAAAAAAAAAAAIEBQADCP/EACcQAAIBBAEDAgcAAAAAAAAAAAECAwAEBREhEkFRIjETJEJhcZHR/8QAFAEBAAAAAAAAAAAAAAAAAAAAAP/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AOqaSvcjFaSrGUklkYb6YxsgVpz5b4FuisyiSZUbpOjrmgW1FhP8sD6l3LPMdhFHYff+UDdpfw3MUkgDRiM6cSDRWgx9695LKyRatRwjn3Y9+PFT3dsw8wjYx2UXLa4Mjap/AsWxNuWOzoj9EigLK25nSA9aokUokZm7AA1Jv57jJsBBBM1kD9HpLn8mquQs3vJYleXptRy6D3Y9ufFOoiogVAFUDQA7UEO1kntbZoYMXKAd7JcEk+faqOHhe3xsMUo04B2PGyTTlZQf/9k="
-			res.send(JSON.stringify({imageBase64: blankImg}));
+			res.send(JSON.stringify({productID: req.params.id, imageBase64: blankImg}));
 		}else {
 			//console.log("image64");
 			var buffer =new Buffer(contents).toString('base64');	
 			//console.log(buffer);
-			res.send(JSON.stringify({imageBase64: buffer}));		
+			res.send(JSON.stringify({productID: req.params.id, imageBase64: buffer}));		
 		}
 	}); 
 }
@@ -254,7 +254,7 @@ function insertBuyItemsTrans(req , res) {
 	var request;
 	var ps;
 	//var quoData = req.body;
-	//console.log(quoData);
+	console.log(req.headers['bill-header']);
 	var quoHeader = JSON.parse(req.headers['bill-header']);
   	//var quoHeader = quoData[0];
 	var quoDetail = req.body;

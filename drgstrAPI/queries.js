@@ -268,7 +268,23 @@ function updateItemQty(req , res) {
 	});  
 }
 
+// ตรวจของก่อนส่ง
+function getReturnItem(req , res){
+    var query = "select returnID, productID, businessName,unitNameA, \
+	sum(returnQty) as returnQty, 0 as resultQty, 0 as diffQty from v_returnDetail \
+	where returnID = '" + req.params.id + "' group by returnID, productID, \
+	businessName, unitNameA";
+    executeQuery(res, query);
+}
 
+function getReturnItemX(req , res){
+	console.log("ok it working")
+    var query = "select '' as returnID, a.productID, b.businessName, a.unitNameS as unitNameA, \
+	unitNameX, 0 as returnQty, 0 as resultQty, 0 as diffQty from tb_posUnit a left join tb_product b \
+	on a.productID = b.productID \
+	where a.saleBarcode = '" + req.params.id + "'";
+    executeQuery(res, query);
+}
 //linebot
 function getOrderBySupID(req , res) {
 	sql.connect(dbConfig, function (err) {
@@ -451,7 +467,7 @@ async function getBarcodeByIDAsync(req , res) {
         let result1 = await pool.request()
             .input('productID', sql.Char(6), value)
             .execute('m_posUnit_GetByID') 
-		console.dir(result1)
+		// console.dir(result1)
 		
 	    let img = await fs.readFile('c:/programData/DrugStoreRx/images/product/'+ req.params.id +'.jpg');
 		return res.send(JSON.stringify(result1).slice(1, -1));
@@ -579,4 +595,6 @@ module.exports = {
   getBarcodeByID: getBarcodeByID,
   getBarcodeByIDAsync: getBarcodeByIDAsync,
   updateBarcodeByID: updateBarcodeByID,
+  getReturnItem: getReturnItem,
+  getReturnItemX: getReturnItemX,
 };

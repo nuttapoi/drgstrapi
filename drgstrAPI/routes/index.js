@@ -27,6 +27,10 @@ router.get('/api/rpt_getLotDetail/:id', db.getLotsByID);
 router.get('/api/rpt_getLotDetail/:id/barcode', db.getLotsByBarcode);
 router.put('/api/rpt_getLotDetail', db.updateLots);
 
+//delivery checker
+router.get('/api/delivery_check/:id/return', db.getReturnItem);
+router.get('/api/delivery_check/:id/barcode', db.getReturnItemX);
+
 //image upload
 router.get('/api/product/:id/image', db_yeepua.getItemImage);
 router.put('/api/product/:id/image', db_yeepua.saveItemImage);
@@ -43,7 +47,7 @@ router.get('/api/bot_pushDaily', db.getDailyReport);
 router.post('/api/login', db_yeepua.getUser);
 router.get('/api/yeepua/promotion', db_yeepua.getPromotion);
 router.post('/api/logout', function(req, res) {
-  res.status(200).send({ auth: false, token: null });
+res.status(200).send({ auth: false, token: null });
 });
 router.get('/api/yeepua/:id/barcode', db_yeepua.getBuyItemByBarcode);
 router.get('/api/yeepua', db_yeepua.getBuyItems);
