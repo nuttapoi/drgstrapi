@@ -23,6 +23,12 @@ router.get('/api/rpt_invStock/:id', db.getInvBySupID);
 router.get('/api/datacollector', db.getItems);
 router.get('/api/datacollector/:id', db.getItemByBarcode);
 router.put('/api/datacollector/:id', db.updateItemQty);
+router.get('/api/datacollector/:id/id', db.getCountByID);
+
+router.get('/api/inventory_check', db.getAllCounted);
+router.post('/api/inventory_check', db.insertCounted);
+router.delete('/api/inventory_check/:id/id', db.deleteCounted);
+
 router.get('/api/rpt_getLotDetail/:id', db.getLotsByID);
 router.get('/api/rpt_getLotDetail/:id/barcode', db.getLotsByBarcode);
 router.put('/api/rpt_getLotDetail', db.updateLots);
@@ -30,6 +36,7 @@ router.put('/api/rpt_getLotDetail', db.updateLots);
 //delivery checker
 router.get('/api/delivery_check/:id/return', db.getReturnItem);
 router.get('/api/delivery_check/:id/barcode', db.getReturnItemX);
+
 
 //image upload
 router.get('/api/product/:id/image', db_yeepua.getItemImage);

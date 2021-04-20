@@ -30,7 +30,7 @@ var executeQuery = function(res, query){
 	sql.connect(dbConfig, function (err) {
 		if (err) {   
 			console.log("Error while connecting database :- " + err);
-			res.send(err);
+			res.status(500).send(err);
 		}
 		else {
 		    // create Request object
@@ -39,10 +39,10 @@ var executeQuery = function(res, query){
 		    request.query(query, function (err, recordsets, returnValue) {
 		        if (err) {
 		            console.log("Error while querying database :- " + err);
-		    	    res.send(err);
+		    	    res.status(500).send(err);
 		        } else {
-		        	console.log(res);
-		            res.send(recordsets);
+		        	console.log(JSON.stringify(recordsets));
+		            res.status(200).send(recordsets);
 		        }
 		    });
 		}
@@ -208,11 +208,11 @@ function getMinBySupID(req , res) {
 	});  
 }
 
-// เครื่องนับสต๊อก
-
+//ปรับสต๊อก
 function getItems(req, res) {
 	var where = "where businessName like '" + req.query.name + "%' and (statusActive ='false')";
-	var query = "select productID,businessName,latestCost,qtyNowAll,unitNameA,saleA,qtyNowAll as 'qtyActual' from v_LIFO " + where;
+	var query = "select productID,businessName,latestCost,qtyNowAll,unitNameA,saleA, " 
+	+ "qtyNowAll as 'qtyActual' from v_LIFO " + where;
     executeQuery(res, query);
 }
 
@@ -230,11 +230,11 @@ function getItemByBarcode(req , res) {
 		    request.execute('m_inventory_barcode', function (err, recordsets, returnValue) {
 		        if (err) {
 		            console.log("Error while querying database :- " + err);
-		    	    res.send(err);
+					return res.status(500).send(JSON.stringify({error: err}));
 		        } else {
 		        	console.log(res);
-			        res.send(JSON.stringify(recordsets).slice(1, -1));
-			        }
+			        res.status(200).send(JSON.stringify(recordsets).slice(1, -1));
+				}
 		    });
 		}
 	});  
@@ -266,6 +266,81 @@ function updateItemQty(req , res) {
 		    });
 		}
 	});  
+}
+
+// PDA เครื่องนับสต๊อก
+function getAllCounted(req, res) {
+	sql.connect(dbConfig, function (err) {
+		if (err) {   
+			console.log("Error while connecting database :- " + err);
+			return res.status(500).send(JSON.stringify({error: err}));
+		}
+		else {
+		    // create Request object
+		    var request = new sql.Request();
+
+		    request.execute('m_inventoryCheck_SEL', function (err, recordsets, returnValue) {
+		        if (err) {
+		            console.log("Error while querying database :- " + err);
+		    	    res.send(err);
+		        } else {
+		        	console.log(res);
+			        res.send(JSON.stringify(recordsets).slice(1, -1));
+			        }
+		    });
+		}
+	});  
+}
+
+function getCountByID(req , res) {
+	sql.connect(dbConfig, function (err) {
+		if (err) {   
+			console.log("Error while connecting database :- " + err);
+			res.send(err);
+		}
+		else {
+		    // create Request object
+		    var request = new sql.Request();
+
+			request.input('id', sql.Char,req.params.id);
+		    request.execute('m_inventory_id', function (err, recordsets, returnValue) {
+		        if (err) {
+		            console.log("Error while querying database :- " + err);
+					return res.status(500).send(JSON.stringify({error: err}));
+		        } else {
+		        	console.log(res);
+			        res.status(200).send(JSON.stringify(recordsets).slice(1, -1));
+				}
+		    });
+		}
+	});  
+}
+
+function insertCounted(req , res) {
+	sql.connect(dbConfig, function (err) {
+		if (err) {   
+			console.log("Error while connecting database :- " + err);
+			return res.status(500).send(JSON.stringify({error: err}));
+		}
+		// create Request object
+		var request = new sql.Request();
+
+		request.input('productID', sql.Char, req.body.productID);
+		request.input('actualQty', sql.Float, req.body.qtyActual);
+		request.execute('m_inventoryCheck_INS', function (err, recordsets, returnValue) {
+			if (err) {
+				console.log("Error while insert database :- " + err);
+				return	res.status(500).send(JSON.stringify({error: err}));
+			} else {
+				res.status(200).send(JSON.stringify({status: 'sucess'}));
+			}
+		});
+	});  
+}
+
+function deleteCounted(req, res) {
+	var query = "delete from tb_inventoryCheck where productID = '" + req.params.id + "'";
+    executeQuery(res, query);
 }
 
 // ตรวจของก่อนส่ง
@@ -587,6 +662,10 @@ module.exports = {
   getItems: getItems,
   getItemByBarcode: getItemByBarcode,
   updateItemQty: updateItemQty,
+  getCountByID: getCountByID,
+  insertCounted: insertCounted,
+  deleteCounted: deleteCounted,
+  getAllCounted: getAllCounted,
   getLotsByBarcode: getLotsByBarcode,
   getLotsByID: getLotsByID,
   updateLots: updateLots,

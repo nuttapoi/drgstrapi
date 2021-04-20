@@ -33,6 +33,9 @@ app.use(bodyParser.urlencoded({extended:false}));
 app.use(bodyParser.json());
 app.use(express.static(__dirname + '/public'));
 app.use('/productImages',express.static('c:/programdata/drugstorerx/images/product/'));
+app.get('/productImages/*', function(req, res) {
+  res.sendFile('c:/no-image.gif')
+});
 
 // CORS Middleware
 //app.use(function (req, res, next) {

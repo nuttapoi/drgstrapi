@@ -1,7 +1,7 @@
 var sql = require("mssql");
 var async = require('async');
 var jwt = require('jsonwebtoken');
-var bcrypt = require('bcryptjs');
+// var bcrypt = require('bcryptjs');
 // var Request = require('tedious').Request;  
 // var TYPES = require('tedious').TYPES;  
 // var Connection = require('tedious').Connection;  
@@ -24,7 +24,7 @@ function base64_encode(file) {
     // read binary data
     var bitmap = fs.readFileSync(file);
     // convert binary data to base64 encoded string
-    return new Buffer(bitmap).toString('base64');
+    return new Buffer.from(bitmap).toString('base64');
 }
 
 function decodeBase64Image(dataString) {
@@ -36,7 +36,7 @@ function decodeBase64Image(dataString) {
   }
 
   response.type = matches[1];
-  response.data = new Buffer(matches[2], 'base64');
+  response.data = new Buffer.from(matches[2], 'base64');
 
   return response;
 }
@@ -102,22 +102,6 @@ function saveItemImage(req , res) {
 		});
 	});  
 }
-// function saveItemImage(req , res) {
-// 	let fileName ='c:/programData/DrugStoreRx/images/product/'+ req.params.id +'.jpg'; 
-// 	let putImage = req.body.imageBase64;
-// 	let data = putImage.replace(/^data:image\/\w+;base64,/, '');
-
-// 	fs.writeFile(fileName, data, {encoding: 'base64'}, function(err){
-// 		if (err){
-// 			res.status(500).send(JSON.stringify({error: err}));
-// 		}else {
-// 			res.send(JSON.stringify({productID: req.params.id, imageBase64: data }));
-// 			// console.log("save image sucess");
-// 		}
-// 	}); 
-// }
-
-
 
 var executeQuery = function(res, query){             
 	sql.connect(dbConfig, function (err) {
@@ -172,6 +156,7 @@ function verifyToken(req, res, next) {
   
 	}
 }
+
 
 //yeepua
 function getUser(req , res) {
@@ -423,7 +408,7 @@ function getBuyItemByBarcode(req , res){
 					res.send(JSON.stringify(final));
 				}else {
 					//console.log("image64");
-					var buffer =new Buffer(contents).toString('base64');
+					var buffer =new Buffer.from(contents).toString('base64');
 					var final = JSON.parse(step1Result);
 					final[0].imageBase64="data:image/jpeg;base64," + buffer; 
 					// console.log(final);					
@@ -475,9 +460,9 @@ module.exports = {
 // 			// request = new sql.Request(transaction);  
 // 			var d = new Date();
 // 			var n = d.toISOString();
-// 			request.input('billID', sql.Char (10), '2017070001');
-// 			request.input('cusID', sql.Char (5),'00003');
-// 			request.input('saleDate', sql.VarChar, n);
+// 			request.input('billID', sql.Char (10,'00003');
+// 			request.input('saleDate', sql.Var), '2017070001');
+// 			request.input('cusID', sql.Char (5)Char, n);
 // 			request.input('totalPrice', sql.Real, totalPrice);
 // 			request.input('userID', sql.Char (5),'00003');
 // 			request.input('saleNote', sql.NVarChar (200),'');
