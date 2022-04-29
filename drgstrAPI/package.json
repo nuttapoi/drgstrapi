@@ -4,7 +4,7 @@
   "description": "RESTful API using Node JS, Express JS, and MS SQL Server",
   "main": "server.js",
   "dependencies": {
-    "async": "^2.5.0",
+    "async": "^2.6.4",
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.15.2",
     "cors": "^2.8.5",
